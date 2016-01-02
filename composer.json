@@ -1,6 +1,6 @@
 {
-	"name": "joshcam/mysqli-database-class",
-	"description": "PHP MySQL Wrapper and object mapper which utilizes MySQLi and prepared statements",
+	"name": "rome2213/mysqli-database-class",
+	"description": "PHP MySQL Wrapper and object mapper which utilizes MySQLi and prepared statements.  Added PHP Namespaces.",
 	"license": "GPL-3.0",
     "authors": [
         {

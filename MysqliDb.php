@@ -13,6 +13,8 @@
  * @version   2.6-master
  */
 
+namespace MysqliDb;
+
 class MysqliDb
 {
 
@@ -253,7 +255,7 @@ class MysqliDb
             throw new Exception('MySQL host is not set');
         }
 
-        $this->_mysqli = new mysqli($this->host, $this->username, $this->password, $this->db, $this->port);
+        $this->_mysqli = new \mysqli($this->host, $this->username, $this->password, $this->db, $this->port);
 
         if ($this->_mysqli->connect_error) {
             throw new Exception('Connect Error ' . $this->_mysqli->connect_errno . ': ' . $this->_mysqli->connect_error);
@@ -784,19 +786,13 @@ class MysqliDb
      * @return MysqliDb
      */
 
-    public function having($havingProp, $havingValue = 'DBNULL', $operator = '=', $cond = 'AND')
+    public function having($havingProp, $havingValue = null, $operator = null)
     {
-        // forkaround for an old operation api
-        if (is_array($havingValue) && ($key = key($havingValue)) != "0") {
-            $operator = $key;
-            $havingValue = $havingValue[$key];
+        if ($operator) {
+            $havingValue = array($operator => $havingValue);
         }
 
-        if (count($this->_having) == 0) {
-            $cond = '';
-        }
-
-        $this->_having[] = array($cond, $havingProp, $operator, $havingValue);
+        $this->_having[] = array("AND", $havingValue, $havingProp);
         return $this;
     }
 
@@ -813,7 +809,12 @@ class MysqliDb
      */
     public function orHaving($havingProp, $havingValue = null, $operator = null)
     {
-        return $this->having($havingProp, $havingValue, $operator, 'OR');
+        if ($operator) {
+            $havingValue = Array($operator => $havingValue);
+        }
+
+        $this->_having[] = Array("OR", $havingValue, $havingProp);
+        return $this;
     }
 
     /**
@@ -1105,7 +1106,7 @@ class MysqliDb
      *
      * @return array The results of the SQL fetch.
      */
-    protected function _dynamicBindResults(mysqli_stmt $stmt)
+    protected function _dynamicBindResults(\mysqli_stmt $stmt)
     {
         $parameters = array();
         $results = array();
@@ -1331,9 +1332,7 @@ class MysqliDb
         $isInsert = preg_match('/^[INSERT|REPLACE]/', $this->_query);
         $dataColumns = array_keys($tableData);
         if ($isInsert) {
-            if (isset ($dataColumns[0]))
-                $this->_query .= ' (`' . implode($dataColumns, '`, `') . '`) ';
-            $this->_query .= ' VALUES (';
+            $this->_query .= ' (`' . implode($dataColumns, '`, `') . '`)  VALUES (';
         } else {
             $this->_query .= " SET ";
         }
@@ -1472,9 +1471,7 @@ class MysqliDb
     protected function _prepareQuery()
     {
         if (!$stmt = $this->mysqli()->prepare($this->_query)) {
-            $msg = "Problem preparing query ($this->_query) " . $this->mysqli()->error;
-            $this->reset();
-            throw new Exception($msg);
+            throw new \Exception("Problem preparing query ($this->_query) " . $this->mysqli()->error);
         }
 
         if ($this->traceEnabled) {
@@ -1733,7 +1730,7 @@ class MysqliDb
     public function copy()
     {
         $copy = unserialize(serialize($this));
-        $copy->_mysqli = null;
+        $copy->_mysqli = $this->_mysqli;
         return $copy;
     }
 
